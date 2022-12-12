@@ -12,6 +12,7 @@ RUN INSTALL_PKGS="ansible openssh rsync wget bc file findutils git hostname lsof
 RUN wget -O /usr/local/bin/yq \
   https://github.com/mikefarah/yq/releases/download/v4.30.4/yq_linux_$(uname -m \
     | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+  chmod +x /usr/local/bin/yq && \
   ansible-galaxy collection install -vvvv community.docker community.general && \
   chmod -R g=u "${HOME}/.ansible/" && \
   INSTALL_PYTHON3_PKGS="netaddr" && \
