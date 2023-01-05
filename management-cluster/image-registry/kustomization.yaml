@@ -1,0 +1,6 @@
+namespace: openshift-image-registry
+
+resources:
+  - 00-namespace.yaml
+  - 01-image-registry-pvc.yaml
+  - 10-image-registry.yaml
