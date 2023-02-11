@@ -4,7 +4,7 @@ ENV HOME /output
 RUN set -x; INSTALL_PKGS="ansible openssh rsync wget bc file findutils git hostname lsof make \
       socat tar tree util-linux wget which zip curl gawk iputils jq iproute ca-certificates \
       nmap-ncat socat mtr bash net-tools bind-utils iperf3 tcpdump procps conntrack-tools \
-      iputils ethtool strace ipmitool butane" && \
+      iputils ethtool strace ipmitool butane libvirt-client" && \
   mkdir -p ${HOME} && \
   yum install --setopt=install_weak_deps=False --nodocs -y $INSTALL_PKGS && \
   yum clean all && \
@@ -19,3 +19,10 @@ RUN wget -O /usr/local/bin/yq \
   chmod -R g=u "${HOME}/.ansible/" && \
   INSTALL_PYTHON3_PKGS="netaddr junos-eznc" && \
   pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS
+
+# The libvirt-certs to control libvirt hosts are expected to be provided at runtime
+RUN mkdir -p /etc/pki/{CA,libvirt/private} && \
+    ln -s /tmp/libvirt-certs/cacert.pem     /etc/pki/CA/cacert.pem && \
+    ln -s /tmp/libvirt-certs/clientkey.pem  /etc/pki/libvirt/private/clientkey.pem && \
+    ln -s /tmp/libvirt-certs/clientcert.pem /etc/pki/libvirt/clientcert.pem
+
