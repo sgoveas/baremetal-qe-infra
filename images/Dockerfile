@@ -19,10 +19,3 @@ RUN wget -O /usr/local/bin/yq \
   chmod -R g=u "${HOME}/.ansible/" && \
   INSTALL_PYTHON3_PKGS="netaddr junos-eznc" && \
   pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS
-
-# The libvirt-certs to control libvirt hosts are expected to be provided at runtime
-RUN mkdir -p /etc/pki/{CA,libvirt/private} && \
-    ln -s /tmp/libvirt-certs/cacert.pem     /etc/pki/CA/cacert.pem && \
-    ln -s /tmp/libvirt-certs/clientkey.pem  /etc/pki/libvirt/private/clientkey.pem && \
-    ln -s /tmp/libvirt-certs/clientcert.pem /etc/pki/libvirt/clientcert.pem
-
