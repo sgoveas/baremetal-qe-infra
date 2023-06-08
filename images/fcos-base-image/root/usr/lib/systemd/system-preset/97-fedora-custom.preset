@@ -1,0 +1,8 @@
+enable rpm-ostreed-automatic.timer
+enable docker.service
+enable qemu-guest-agent.service
+enable cockpit.service
+enable openvswitch.service
+disable zincati.service
+enable ovsdb-server.service
+enable ovs-vswitchd.service
