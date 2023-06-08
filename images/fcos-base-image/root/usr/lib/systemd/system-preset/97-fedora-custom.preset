@@ -6,3 +6,4 @@ enable openvswitch.service
 disable zincati.service
 enable ovsdb-server.service
 enable ovs-vswitchd.service
+enable change-shell-once.service
