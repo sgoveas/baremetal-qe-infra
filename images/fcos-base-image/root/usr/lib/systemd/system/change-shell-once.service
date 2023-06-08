@@ -1,0 +1,19 @@
+[Unit]
+Description=Changes the shell of the root and core users once - It can't work as the /etc/passwd file is already written after the first rebase probably due to the ostree three-way merge strategy.
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=!/etc/.shell-init-done
+
+[Service]
+Restart=on-failure
+ExecStartPre=/bin/sh -c '/usr/bin/chsh -s /usr/bin/zsh root'
+ExecStartPre=/bin/sh -c '/usr/bin/chsh -s /usr/bin/zsh core'
+ExecStartPre=/bin/sh -c '/usr/bin/touch /home/core/.zshrc'
+ExecStartPre=/bin/sh -c '/usr/bin/chown core:core /home/core/.zshrc'
+ExecStartPre=/usr/bin/touch /etc/.root-shell-init-done
+ExecStart=/usr/bin/true
+Type=one-shot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
