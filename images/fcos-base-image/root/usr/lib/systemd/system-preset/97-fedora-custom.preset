@@ -6,4 +6,5 @@ enable openvswitch.service
 disable zincati.service
 enable ovsdb-server.service
 enable ovs-vswitchd.service
+disable podman-container-pause.service
 enable change-shell-once.service
