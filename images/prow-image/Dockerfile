@@ -3,8 +3,8 @@ FROM quay.io/centos/centos:stream9
 ENV HOME /output
 RUN set -x; INSTALL_PKGS="bash bc bind-utils butane ca-certificates conntrack-tools coreos-installer diffutils \
         ethtool file findutils gawk git gzip hostname iperf3 ipmitool iproute iputils jq libvirt-client lsof make \
-        mtr net-tools nmap-ncat nmstate openssh procps procps-ng python3 python3-pip rsync shadow-utils socat strace \
-        tar tcpdump tree util-linux wget which zip" && \
+        mtr net-tools nmap-ncat nmstate openssh procps procps-ng python3 python3-pip python-devel rsync shadow-utils socat strace \
+        tar tcpdump tree util-linux wget which zip gcc-toolset-12 go-toolset openssl openssl-devel" && \
   mkdir -p ${HOME} && \
   dnf install --setopt=install_weak_deps=False --nodocs -y $INSTALL_PKGS && \
   dnf clean all && \
