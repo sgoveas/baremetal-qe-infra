@@ -12,7 +12,7 @@ RUN set -x; INSTALL_PKGS="bash bc bind-utils butane ca-certificates conntrack-to
 
 RUN set -x; \
     OC_TAR_URL="https://mirror.openshift.com/pub/openshift-v4/$(uname -m)/clients/ocp/latest/openshift-client-linux.tar.gz" && \
-    curl -q -o /tmp/oc.tar.gz "$OC_TAR_URL" && \
+    curl -L -q -o /tmp/oc.tar.gz "$OC_TAR_URL" && \
     tar -C /usr/bin/ -xvf /tmp/oc.tar.gz oc && \
     rm -f /tmp/oc.tar.gz
 
