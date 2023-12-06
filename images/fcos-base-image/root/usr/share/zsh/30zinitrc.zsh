@@ -53,7 +53,7 @@ exists_or_extract_latest_gh_release "${LOCAL_BIN_PATH}/oc" okd-project okd \
 exists_or_extract_latest_gh_release "${LOCAL_BIN_PATH}/dive" wagoodman dive "linux_${LLVM_ARCH}.tar.gz"
 exists_or_extract_latest_gh_release "${LOCAL_BIN_PATH}/chroma" alecthomas chroma "linux-${LLVM_ARCH}.tar.gz"
 exists_or_install_latest_gh_release operator-framework operator-sdk "operator-sdk_linux_${LLVM_ARCH}" ${LOCAL_BIN_PATH}/operator-sdk
-
+ln -sf "${LOCAL_BIN_PATH}"/oc "${LOCAL_BIN_PATH}"/kubectl
 [ -f "${LOCAL_BIN_PATH}"/helm ] || {
   export HELM_INSTALL_DIR="${LOCAL_BIN_PATH}"
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
