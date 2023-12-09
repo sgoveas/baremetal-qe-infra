@@ -1,10 +1,10 @@
 enable squid-proxy.service
-enable poc-registry@registry5000.service
-enable poc-registry@registry6001.service
-enable poc-registry@registry6002.service
+enable squid-proxy-init.service
 enable nginx.service
 enable bind9.service
 enable fcos-download.timer
 enable dhcp.service
 enable dhcp-mgmt.service
 enable tang.service
+enable nfs-server.service
+enable enable-registries.service

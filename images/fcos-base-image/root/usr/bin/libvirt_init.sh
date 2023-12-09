@@ -4,9 +4,10 @@ set -euxo pipefail
 
 STORAGE_POOL_NAME="default"
 STORAGE_FOLDER="/var/lib/libvirt/images"
+STORAGE_CONF_TMP_FILE="/etc/libvirt/storage/storage.conf"
 
 if ! virsh pool-info "${STORAGE_POOL_NAME}"; then
-  cat /tmp/default.xml <<EOF
+  cat > "${STORAGE_CONF_TMP_FILE}" <<EOF
 <pool type='dir'>
   <name>${STORAGE_POOL_NAME}</name>
     <target>
@@ -14,8 +15,8 @@ if ! virsh pool-info "${STORAGE_POOL_NAME}"; then
     </target>
 </pool>
 EOF
-  virsh pool-define /tmp/default.xml
-  rm -f /tmp/default.xml
+  virsh pool-define "${STORAGE_CONF_TMP_FILE}"
+  rm -f "${STORAGE_CONF_TMP_FILE}"
 fi
 
 mkdir -p "${STORAGE_FOLDER}"

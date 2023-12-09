@@ -1,7 +1,8 @@
 #!/bin/bash
+set -euxo pipefail
 
 PORT="$1"
-[ -f /var/.registry-$PORT ] && {
+[ -f "/var/.registry-$PORT" ] && {
   echo "The initialization script for registry-$PORT did already run. Exiting"
   exit 0
 }
@@ -11,6 +12,8 @@ registry_certs_key="/opt/registry-${PORT}/certs/domain.key"
 reg_cert_file="/opt/registry-common/domain.crt"
 reg_key_file="/opt/registry-common/domain.key"
 reg_passwd_file="/opt/registry-common/htpasswd"
+
+mkdir -p "/opt/registry-${PORT}/"
 
 ## GENERATE REGISTRY CONFIGY.YAML FILE
 cat > "/opt/registry-${PORT}/config.yaml" << EOF
@@ -53,8 +56,8 @@ if [ ! -f "${reg_cert_file}" ] || [ ! -f "${reg_key_file}" ]; then
   echo "Some certificate files are not ready yet. Exiting"
   exit 1
 fi
-mkdir -p /opt/registry-${PORT}/{data,auth,certs}
+mkdir -p "/opt/registry-${PORT}/"{data,auth,certs}
 cat "${reg_passwd_file}"> "${registry_password_file}"
 cat "${reg_cert_file}" > "${registry_certs_cert}"
 cat "${reg_key_file}"> "${registry_certs_key}"
-touch /var/.registry-$PORT
+touch "/var/.registry-$PORT"

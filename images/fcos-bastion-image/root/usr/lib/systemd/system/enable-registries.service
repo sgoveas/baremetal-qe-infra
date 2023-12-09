@@ -1,0 +1,17 @@
+[Unit]
+Description=Enable registry services as template instances cannot be enabled through system-preset files
+After=network.target
+ConditionPathExists=!/var/.registry-enabled
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/systemctl enable --now registry@5000.service
+ExecStartPre=/usr/bin/systemctl enable --now registry@6001.service
+ExecStartPre=/usr/bin/systemctl enable --now registry@6002.service
+ExecStart=/bin/touch /var/.registry-enabled
+RemainAfterExit=no
+RestartSec=10
+Restart=on-failure
+
+[Install]
+WantedBy=network.target
