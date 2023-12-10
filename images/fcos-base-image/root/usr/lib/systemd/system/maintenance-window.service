@@ -1,0 +1,8 @@
+[Unit]
+Description=Upgrade and reboot
+AssertFileNotEmpty=!/etc/hosts_pool_reserved
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash -c 'echo "Starting upgrade and reboot" | systemd-cat -p info'
+ExecStart=/usr/bin/rpm-ostree upgrade --reboot
