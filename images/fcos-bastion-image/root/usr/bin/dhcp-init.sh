@@ -5,6 +5,10 @@ set -x
 mkdir -p "${PODMAN_DNSMASQ_BASEDIR}"/{etc,tftpboot,misc} /var/opt/{ignitions,html}
 ign=/var/opt/ignitions
 cp "${LOCAL_PATH}"/dhcp/dnsmasq.conf "${PODMAN_DNSMASQ_BASEDIR}"/etc/
+if [ -f "${PODMAN_DNSMASQ_BASEDIR}"/dnsmasq.hosts.conf ]; then
+  cat "${PODMAN_DNSMASQ_BASEDIR}"/dnsmasq.hosts.conf >> "${PODMAN_DNSMASQ_BASEDIR}"/etc/dnsmasq.conf
+fi
+
 cp "${LOCAL_PATH}"/dhcp/tftpboot/grub.cfg "${TFTP_DIR}"
 cp "${LOCAL_PATH}"/ignitions/* ${ign}
 
@@ -34,8 +38,9 @@ mkdir -p {aarch64,x86_64,output}
 cd /tmp/aarch64
 rpm2cpio /tmp/grub2-efi-aa64* | cpio -idmv
 mv boot/efi/EFI/centos/*.efi /tmp/output/
-
 cd /tmp/x86_64
 rpm2cpio /tmp/grub2-efi-x64* | cpio -idmv
 mv boot/efi/EFI/centos/*.efi /tmp/output/
+
+chmod 755 /tmp/output/*.efi
 EOF

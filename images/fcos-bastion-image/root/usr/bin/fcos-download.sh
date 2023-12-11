@@ -1,39 +1,65 @@
 #!/bin/bash
 
-set -x
+set -eEo pipefail
 
 function fail() {
   echo "$1"
   exit 1
 }
 
-# download latest Fedora CoreOS
-mkdir -p "${TFTP_DIR}"/fcos-{aarch64,x86_64}
-curl -o /tmp/stable.json https://builds.coreos.fedoraproject.org/streams/stable.json
-curl -o /tmp/fedora.gpg https://fedoraproject.org/fedora.gpg
-fcos_release=$(jq -r .architectures.aarch64.artifacts.metal.release /tmp/stable.json)
-echo "<4>~~ Fedora CoreOS Release ${fcos_release} ~~"
 
-for arch in aarch64 x86_64; do
-  pushd "${TFTP_DIR}"/fcos-"${arch}" || fail "pushd failed"
-  files_num=$(find ./ -name "*${fcos_release}*" -type f | wc -l)
-  if ((files_num < 9)); then
-    urls=$(jq .architectures."${arch}".artifacts.metal.formats.pxe /tmp/stable.json)
-    for pxeimg in kernel initramfs rootfs; do
-      location=$(jq -r ."${pxeimg}".location <<< "${urls}")
-      signature=$(jq -r ."${pxeimg}".signature <<< "${urls}")
-      curl -# -O "${location}" || fail "${pxeimg} download failed"
-      curl -# -O "${signature}" || fail "${pxeimg} download failed"
-      pxeimg_l=$(jq -r ."${pxeimg}".location <<< "${urls}" | awk -F/ '{print $NF}')
-      pxeimg_s=$(jq -r ."${pxeimg}".signature <<< "${urls}" | awk -F/ '{print $NF}')
-      echo "$(jq -r ."${pxeimg}".sha256 <<< "${urls}") ${pxeimg_l}" > "${pxeimg_l}"-CHECKSUM
-      gpgv --keyring /tmp/fedora.gpg "${pxeimg_s}" "${pxeimg_l}" || fail "${pxeimg_l} signature verification failed"
-      sha256sum -c "${pxeimg_l}"-CHECKSUM || fail "${pxeimg_l} checksum does not match"
-    done
-  else
-    echo "<4>~~ ${arch} ${fcos_release} image files are available ~~"
-    ls -lh
+function download_and_verify() {
+  local arch="$1"
+  local urls="$2"
+  local artifact="$3"
+  local destination="$4"
+  if [ -f "${destination}/${artifact}" ]; then
+    echo "<4>~~ ${arch}/${artifact} is already available ~~"
+    return
   fi
-  [[ "${PWD}" == "${TFTP_DIR}/fcos-${arch}" ]] && find ./ -type f -mtime +60 -exec rm {} \;
-  popd || fail "popd failed"
+  set -exo pipefail
+  TMPDIR=$(mktemp -d)
+  # shellcheck disable=SC2064
+  trap "rm -rf ${TMPDIR}; fail 'Failed downloading and verifying ${arch}/${artifact}'" EXIT ERR SIGINT SIGTERM
+  pushd "${TMPDIR}"
+
+  local location
+  local signature
+  location="$(jq -r ."${artifact}".location <<< "${urls}")"
+  signature="$(jq -r ."${artifact}".signature <<< "${urls}")"
+  curl -f -o "./${artifact}" "${location}"
+  curl -f -o "./${artifact}.sig" "${signature}"
+  echo "$(jq -r ."${artifact}".sha256 <<< "${urls}") ${artifact}" > "${artifact}.checksum"
+  gpgv --keyring /tmp/fedora.gpg "${artifact}.sig" "${artifact}"
+  sha256sum -c "${artifact}.checksum"
+  # Commit: move the file to the destination only if the checksum and signature verifications passed
+  mv "./${artifact}" "${destination}/${artifact}"
+  popd
+  rm -rf "${TMPDIR}"
+}
+
+TFTP_DIR=${TFTP_DIR:-/var/opt/dnsmasq/tftpboot}
+HTTP_DIR=${HTTP_DIR:-/var/opt/html}
+mkdir -p "${TFTP_DIR}"/fcos-{aarch64,x86_64}
+mkdir -p "${HTTP_DIR}"/fcos-{aarch64,x86_64}
+
+curl -f -o /tmp/stable.json "https://builds.coreos.fedoraproject.org/streams/stable.json"
+curl -f -o /tmp/fedora.gpg "https://fedoraproject.org/fedora.gpg"
+fcos_release=$(jq -r .architectures.aarch64.artifacts.metal.release /tmp/stable.json)
+echo "<4>~~ Downloading Fedora CoreOS Release ${fcos_release} ~~"
+for arch in aarch64 x86_64; do
+  urls="$(jq -rc .architectures."${arch}".artifacts.metal.formats.pxe /tmp/stable.json)"
+  find "${TFTP_DIR}/fcos-${arch}" -type f -mtime +60 -exec rm {} \;
+  find "${HTTP_DIR}/fcos-${arch}" -type f -mtime +60 -exec rm {} \;
+  download_and_verify "${arch}" "${urls}" kernel "${TFTP_DIR}/fcos-${arch}"
+  download_and_verify "${arch}" "${urls}" initramfs "${TFTP_DIR}/fcos-${arch}"
+  download_and_verify "${arch}" "${urls}" rootfs "${HTTP_DIR}/fcos-${arch}"
 done
+
+# At the end of the process, restore SELinux contexts and restart the podman-based services to allow the container_t context to
+# be set on the newly downloaded files
+restorecon -R "${TFTP_DIR}"
+restorecon -R "${HTTP_DIR}"
+# Allow temporary failures at provisioning time, when the other services might not be ready yet
+systemctl restart dhcp || true
+systemctl restart nginx || true
