@@ -71,6 +71,7 @@ function check_available_hosts() {
     flock -u "$LOCK_FD"
     return 1
   fi
+  # shellcheck disable=SC2001
   FIRST_HOST=$(echo "${CANDIDATES_HOSTS[0]}" | sed 's/.*openshift-qe-0\([0-9]\{2,\}\).*$/\1/')
   return 0
 }
@@ -110,7 +111,7 @@ reserve_hosts "worker" "$N_WORKERS"
 printf '%s\n' "${OUTPUT[@]}" >> "$RESERVED_FILE"
 
 if [ x"$REQUEST_VIPS" == x"true" ]; then
-    echo "{\"ingress_vip\": \"${INGRESS_VIPS_SUBNET_PREFIX:-192.168.89.}${FIRST_HOST}\", \"api_vip\": \"${API_VIPS_SUBNET_PREFIX}${FIRST_HOST}\"}" > "${BUILD_DIR}/vips.json"
+    echo "{\"ingress_vip\": \"${INGRESS_VIPS_SUBNET_PREFIX:-192.168.82.}${FIRST_HOST}\", \"api_vip\": \"${API_VIPS_SUBNET_PREFIX:-192.168.81.}${FIRST_HOST}\"}" > "${BUILD_DIR}/vips.json"
 fi
 echo "Releasing lock $LOCK_FD ($LOCK)"
 flock -u "$LOCK_FD"
