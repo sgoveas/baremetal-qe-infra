@@ -19,6 +19,8 @@ RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iput
                               sudo screen unzip util-linux-user ignition  zsh nmap-ncat socat python3-pip man \
                               skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs"; \
     rpm-ostree install $PACKAGES_INSTALL \
+    && rpm-ostree ex rebuild \
+    && rpm-ostree cleanup -m \
     && ln -s /usr/bin/ld.bfd /usr/bin/ld \
     && ln -s /usr/sbin/ovs-vswitchd.dpdk /usr/sbin/ovs-vswitchd \
     && rm -rf /var/* \
