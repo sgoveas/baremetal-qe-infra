@@ -36,7 +36,7 @@ RUN set -x; systemctl preset-all \
     && echo "PermitRootLogin prohibit-password" >> /etc/ssh/sshd_config.d/90-ssh-root-login.conf \
     && echo -n > /etc/hosts_pool_inventory \
     && echo -n > /etc/hosts_pool_reserved \
-    && chown core:core /etc/hosts_pool_reserved
+    && chown 1000:1000 /etc/hosts_pool_reserved
 
 # Install zsh
 RUN HOME=/tmp RUNZSH=no CHSH=no ZSH=/usr/lib/ohmyzsh \
