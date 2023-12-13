@@ -29,9 +29,13 @@ RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iput
 
 COPY root/ /
 
-RUN set -x; systemctl preset-all && \
-    echo -n > /etc/hosts_pool_inventory && \
-    echo -n > /etc/hosts_pool_reserved
+RUN set -x; systemctl preset-all \
+    && echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/99-sysctl.conf \
+    && echo "net.ipv6.conf.all.forwarding = 1" >> /etc/sysctl.d/99-sysctl.conf \
+    && echo "net.ipv4.ip_unprivileged_port_start = 1" >> /etc/sysctl.d/99-sysctl.conf \
+    && echo -n > /etc/hosts_pool_inventory \
+    && echo -n > /etc/hosts_pool_reserved \
+    && chown core:core /etc/hosts_pool_reserved
 
 # Install zsh
 RUN HOME=/tmp RUNZSH=no CHSH=no ZSH=/usr/lib/ohmyzsh \
