@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is a modified version of https://github.com/openvswitch/ovs/blob/master/utilities/ovs-docker
+# Suppressing SC2006 (use $(..) instead of legacy `..`) because
+# this script comes from a third party with some modifications for our purposes. [FIXME]
+# shellcheck disable=SC2006
+
 # Check for programs we'll need.
 search_path () {
     save_IFS=$IFS
@@ -117,7 +122,7 @@ add_port () {
         exit 1
     fi
 
-    if PID=`docker inspect -f '{{.State.Pid}}' "$CONTAINER"`; then :; else
+    if PID=`podman inspect -f '{{.State.Pid}}' "$CONTAINER"`; then :; else
         echo >&2 "$UTIL: Failed to get the PID of the container"
         exit 1
     fi
@@ -131,7 +136,7 @@ add_port () {
        -- set interface "${PORTNAME}_l" \
        external_ids:container_id="$CONTAINER" \
        external_ids:container_iface="$INTERFACE"; then :; else
-        echo >&2 "$UTIL: Failed to add "${PORTNAME}_l" port to bridge $BRIDGE"
+        echo >&2 "$UTIL: Failed to add ${PORTNAME}_l port to bridge $BRIDGE"
         ip link delete "${PORTNAME}_l"
         exit 1
     fi
@@ -251,9 +256,9 @@ Options:
 EOF
 }
 
-UTIL=$(basename $0)
+UTIL=$(basename "$0")
 search_path ovs-vsctl
-search_path docker
+search_path podman
 search_path uuidgen
 
 if (ip netns) > /dev/null 2>&1; then :; else
