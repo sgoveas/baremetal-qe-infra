@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "${#}" -le 1 ]; then
+    echo "Usage: ${0} <host_id> <command>"
+    exit 1
+fi
+
+host_id="${1}"
+shift
+
+host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.bmc_address == "*'"${host_id}"'*")')
+
+user=$(echo "${host_obj}" | yq -r '.bmc_user')
+password=$(echo "${host_obj}" | yq -r '.bmc_pass')
+address=$(echo "${host_obj}" | yq -r '.bmc_address')
+
+ipmitool -I lanplus -H "${address}" -U "${user}" -P "${password}" "${@}"
