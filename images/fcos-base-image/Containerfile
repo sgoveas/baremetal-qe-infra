@@ -14,7 +14,7 @@ RUN rpm-ostree uninstall nfs-utils-coreos && rpm-ostree install nfs-utils && rm 
 
 RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iputils iproute mtr nethogs socat chrony \
                               targetcli net-tools bind-utils iperf iperf3 iputils mtr ethtool tftp wget ipmitool gawk \
-                              htop ncdu procps strace iotop subversion git git-lfs gnupg2 openssl openvpn rsync tcpdump \
+                              htop ncdu procps strace iotop subversion git git-lfs gnupg2 lldpd openssl openvpn rsync tcpdump \
                               nmap nmap-ncat krb5-workstation qemu-kvm qemu-user-static libvirt virt-manager virt-install \
                               sudo screen telnet unzip util-linux-user ignition  zsh nmap-ncat socat python3-pip man \
                               skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs"; \
