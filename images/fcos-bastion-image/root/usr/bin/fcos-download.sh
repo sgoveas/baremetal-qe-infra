@@ -56,6 +56,12 @@ for arch in aarch64 x86_64; do
   download_and_verify "${arch}" "${urls}" rootfs "${HTTP_DIR}/fcos-${arch}"
 done
 
+# Download upstream ipxe
+mkdir -p "${HTTP_DIR}"/ipxe
+find "${HTTP_DIR}/ipxe" -type f -mtime +60 -exec rm {} \;
+curl -f -o "${HTTP_DIR}/ipxe/ipxe.x86_64.efi" "https://boot.ipxe.org/ipxe.usb"
+curl -f -o "${HTTP_DIR}/ipxe/ipxe.aarch64.efi" "https://boot.ipxe.org/arm64-efi/ipxe.usb"
+
 # At the end of the process, restore SELinux contexts and restart the podman-based services to allow the container_t context to
 # be set on the newly downloaded files
 restorecon -R "${TFTP_DIR}"
