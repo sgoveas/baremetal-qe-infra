@@ -1,0 +1,148 @@
+#!/bin/python3
+import redfish
+import sys
+import time
+import pandas as pd
+
+if len(sys.argv) < 3:
+    print("Usage: %s <host> <iso_path>" % sys.argv[0])
+    sys.exit(1)
+
+
+def check_response(r, exit_on_error=True):
+    """
+    check_response is a helper function to check the response of a redfish request and exit if the status is not 2xx.
+    :param r: the response object
+    :param exit_on_error: boolean, if True, exit the script if the status is not 2xx. Default: True
+    :return:
+    """
+    if r.status < 300:
+        return
+    print(r.text)
+    print(r.status)
+    if exit_on_error:
+        sys.exit(1)
+
+
+def workaround_ami_bmc_bug():
+    """
+    workaround_ami_bmc_bug is meant to run on AMI BMCs (currently only the Ampere Arm64 servers).
+    They are affected by a bug that prevents the ISOs to be mounted/unmounted correctly.
+    As a workaround, we reset the redfish internal redis database and make it populate again from the BMC.
+    :return: None
+    """
+    if manager != "Self":
+        return
+    print(f"Reset {host.name} BMC's redfish database...")
+    try:
+        context.post(f"/redfish/v1/Managers/{manager}/Actions/Oem/AMIManager.RedfishDBReset/",
+                     body={"RedfishDBResetType": "ResetAll"})
+        # Wait for the BMC to reset the database
+        time.sleep(60)
+    except Exception as e:
+        print("Failed to reset the BMC's redfish database. Continuing anyway...")
+    print("Reset BMC and wait for 5mins to be reachable again...")
+    try:
+        context.post(f"/redfish/v1/Managers/{manager}/Actions/Manager.Reset",
+                     body={"ResetType": "ForceRestart"})
+        # Wait for the BMC to reset
+        time.sleep(300)
+    except Exception as e:
+        print("Failed to reset the BMC. Continuing anyway...")
+
+
+def redfish_mount_remote(ctx, manager, removable_disk, sub_system, **kwargs):
+    body = {"Image": iso_path, "Inserted": True, **kwargs}
+    path = f"/redfish/v1/{sub_system}/{manager}/VirtualMedia/{removable_disk}/Actions/VirtualMedia.InsertMedia"
+    print(body, path)
+    response = ctx.post(path, body=body)
+    check_response(response)
+
+    task = None
+    if response.is_processing:
+        while task is None or (task is not None and
+                               (task.is_processing or not task.dict.get("TaskState") in ("Completed", "Exception"))):
+            task = response.monitor(ctx)
+            retry_time = task.retry_after
+            time.sleep(retry_time if retry_time else 5)
+            if task.dict.get("TaskState") in "Completed":
+                return True
+        if task.status > 299:
+            print(f"Error mounting the ISO: {task.message}")
+            return False
+    return task is None
+
+
+if __name__ == "__main__":
+
+    hosts = pd.read_csv("/etc/hosts_pool_inventory", keep_default_na=False, na_values=[], dtype=str)
+    hosts.set_index("host", inplace=True)
+
+    print("Looking for host %s" % sys.argv[1])
+    try:
+        host = hosts.loc[sys.argv[1]]
+    except KeyError:
+        print("Host not found")
+        sys.exit(1)
+
+    if host.empty:
+        print("Host not found")
+        sys.exit(1)
+
+    print(f"Found host {host.name}, BMC Address: {host.bmc_address}")
+
+    iso_path = sys.argv[2]
+    sub_system = "Managers"
+    instance_id = -1
+    if host.vendor == "dell":
+        sub_system = "Systems"
+        instance_id = 0
+
+    if len(sys.argv) > 3:
+        instance_id = int(sys.argv[3])
+    context = redfish.redfish_client(host.bmc_address,
+                                     username=host.redfish_user, password=host.redfish_password, max_retry=20)
+    context.login(auth=redfish.AuthMethod.BASIC)
+    response = context.get(f"/redfish/v1/{sub_system}/")
+    check_response(response)
+    manager = response.dict.get("Members")[0]["@odata.id"].rstrip("/").split("/")[-1]
+    response = context.get(f"/redfish/v1/{sub_system}/{manager}/VirtualMedia/")
+    check_response(response)
+    # We assume that the removable disk is the last one:
+    # - on Dell and HPE servers, the first one is the virtual floppy disk, the second (and last) is the virtual CD-ROM
+    # - on AMI servers, the only one is the virtual CD-ROM
+    # - on Supermicro servers, TODO: verify or fix
+    removable_disk = response.dict.get("Members")[instance_id]["@odata.id"].rstrip("/").split("/")[-1]
+    workaround_ami_bmc_bug()
+
+    print("Eject virtual media, if any...")
+    response = context.post(
+        f"/redfish/v1/{sub_system}/{manager}/VirtualMedia/{removable_disk}/Actions/VirtualMedia.EjectMedia", body={})
+    check_response(response, exit_on_error=False)
+
+    print("Insert new virtual media...")
+
+    other_options = {}
+    if host.transfer_protocol_type == "CIFS":
+        other_options = {"UserName": host.redfish_user, "Password": host.redfish_password, "TransferProtocolType": "CIFS"}
+    elif host.transfer_protocol_type != "":
+        # Some hosts (e.g., HPE RL300) do not recognize the TransferProtocolType option,
+        # we only pass it if it's not empty
+        other_options = {"TransferProtocolType": host.transfer_protocol_type}
+
+    retry_counter = 0
+    max_retries = 6
+    imageIsMounted = False
+    for i in range(0, max_retries):
+        print(f"Mounting virtual media... (try n. {i+1}/{max_retries})")
+        time.sleep(10)
+        if redfish_mount_remote(context, manager, removable_disk, sub_system, **other_options):
+            imageIsMounted = True
+            break
+        time.sleep(20)
+    print(f"Logging out of {host.name}")
+    context.logout()
+
+    if not imageIsMounted:
+        print("Mounting the virtual media failed. Exiting...")
+        sys.exit(1)

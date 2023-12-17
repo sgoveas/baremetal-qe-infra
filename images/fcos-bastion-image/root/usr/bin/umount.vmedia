@@ -1,0 +1,63 @@
+#!/bin/python3
+
+import redfish
+import sys
+import pandas as pd
+
+
+def check_response(r, exit_on_error=True):
+    if r.status < 300:
+        return True
+    print(r.text)
+    print(r.status)
+    if exit_on_error:
+        sys.exit(1)
+    return False
+
+
+hosts = pd.read_csv("/etc/hosts_pool_inventory", keep_default_na=False, na_values=[], dtype=str)
+hosts.host = hosts.host.astype(str) # Make sure the host is a string for now
+hosts.set_index("host", inplace=True)
+
+print("Looking for host %s" % sys.argv[1])
+try:
+    host = hosts.loc[sys.argv[1]]
+except KeyError:
+    print("Host not found")
+    sys.exit(1)
+
+if host.empty:
+    print("Host not found")
+    sys.exit(1)
+
+print("Found host %s, BMC Address: " % host.name, host.bmc_address)
+
+sub_system = "Managers"
+if host.vendor == "dell":
+    sub_system = "Systems"
+
+bmc_address = host.bmc_address
+bmc_username = host.redfish_user
+bmc_password = host.redfish_password
+
+context = redfish.redfish_client(bmc_address, username=bmc_username, password=bmc_password)
+context.login(auth=redfish.AuthMethod.BASIC)
+response = context.get(f"/redfish/v1/{sub_system}/")
+check_response(response)
+manager = response.dict.get("Members")[0]["@odata.id"].rstrip("/").split("/")[-1]
+response = context.get(f"/redfish/v1/{sub_system}/{manager}/VirtualMedia/")
+check_response(response)
+
+members = response.dict.get("Members")
+for member in members:
+    mid = member.get("@odata.id").rstrip("/").split("/")[-1]
+    print(f"Ejecting media {mid}")
+    path = f"/redfish/v1/{sub_system}/{manager}/VirtualMedia/{mid}/Actions/VirtualMedia.EjectMedia"
+    print(path)
+    response = context.post(path, body={})
+    if check_response(response, exit_on_error=False):
+        print(f"Media {mid} ejected successfully")
+    else:
+        print(f"Media {mid} not ejected successfully")
+
+print("Exiting successfully...")
