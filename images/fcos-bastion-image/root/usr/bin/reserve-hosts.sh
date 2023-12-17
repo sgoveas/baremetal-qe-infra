@@ -111,7 +111,8 @@ reserve_hosts "worker" "$N_WORKERS"
 printf '%s\n' "${OUTPUT[@]}" >> "$RESERVED_FILE"
 
 if [ x"$REQUEST_VIPS" == x"true" ]; then
-    echo "{\"ingress_vip\": \"${INGRESS_VIPS_SUBNET_PREFIX:-192.168.82.}${FIRST_HOST}\", \"api_vip\": \"${API_VIPS_SUBNET_PREFIX:-192.168.81.}${FIRST_HOST}\"}" > "${BUILD_DIR}/vips.json"
+    FIRST_HOST_ID=$(echo "${CANDIDATES_HOSTS[0]}" | cut -f3 -d,)
+    echo "{\"ingress_vip\": \"${INGRESS_VIPS_SUBNET_PREFIX:-192.168.82.}${FIRST_HOST_ID}\", \"api_vip\": \"${API_VIPS_SUBNET_PREFIX:-192.168.81.}${FIRST_HOST_ID}\"}" > "${BUILD_DIR}/vips.json"
 fi
 echo "Releasing lock $LOCK_FD ($LOCK)"
 flock -u "$LOCK_FD"
