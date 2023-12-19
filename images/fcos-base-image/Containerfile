@@ -5,7 +5,7 @@ ENTRYPOINT ["/bin/bash"]
 RUN set -x; arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'); cat /etc/os-release \
     && rpm-ostree install \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm \
+        #https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm \
     && ostree container commit
 
 # Replacing nfs-utils-coreos with nfs-utils as some required packages (e.g., libvirt) depend on it: see coreos/fedora-coreos-tracker#572
@@ -17,7 +17,7 @@ RUN set -x; PACKAGES_INSTALL="bridge-utils conntrack-tools curl fping iftop iput
                               htop ncdu procps strace iotop subversion git git-lfs gnupg2 lldpd openssl openvpn rsync tcpdump \
                               nmap nmap-ncat krb5-workstation qemu-kvm qemu-user-static libvirt virt-manager virt-install \
                               sudo screen telnet unzip util-linux-user ignition  zsh nmap-ncat socat python3-pip man \
-                              skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs"; \
+                              skopeo jq vim neovim inotify-tools firewall-config openvswitch NetworkManager-ovs tree"; \
     rpm-ostree install $PACKAGES_INSTALL \
     && ln -s /usr/bin/ld.bfd /usr/bin/ld \
     && ln -s /usr/sbin/ovs-vswitchd.dpdk /usr/sbin/ovs-vswitchd \

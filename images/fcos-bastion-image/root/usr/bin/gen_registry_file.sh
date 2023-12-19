@@ -14,6 +14,8 @@ reg_key_file="/opt/registry-common/domain.key"
 reg_passwd_file="/opt/registry-common/htpasswd"
 
 mkdir -p "/opt/registry-${PORT}/"
+# Ensure the file exists (it needs to be filled by ignition)
+touch "/opt/registry-${PORT}/env"
 
 ## GENERATE REGISTRY CONFIGY.YAML FILE
 cat > "/opt/registry-${PORT}/config.yaml" << EOF
