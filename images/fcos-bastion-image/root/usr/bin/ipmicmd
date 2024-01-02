@@ -8,7 +8,12 @@ fi
 host_id="${1}"
 shift
 
-host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.bmc_address == "*'"${host_id}"'*")')
+host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.host == "'"${host_id}"'")')
+
+if [ "${host_obj}" == "null" ]; then
+    echo "Host ${host_id} not found"
+    exit 1
+fi
 
 user=$(echo "${host_obj}" | yq -r '.bmc_user')
 password=$(echo "${host_obj}" | yq -r '.bmc_pass')
