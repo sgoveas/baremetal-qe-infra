@@ -6,10 +6,12 @@ RequiresMountsFor=%t/containers
 
 Wants=squid-proxy-init.service
 After=squid-proxy-init.service
+ConditionPathExists=|/run/net_env
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=/usr/share/bastion_services/squid/squid_systemd.conf
+EnvironmentFile=/run/net_env
 ExecStartPre=/usr/bin/podman rm -f --ignore squid-proxy
 ExecStart=/usr/bin/podman run \
     --name squid-proxy -p 3128-3130:3128-3130/tcp \
@@ -20,6 +22,12 @@ ExecStart=/usr/bin/podman run \
     -v "${PODMAN_SQUID_BASEDIR}/cache:/var/spool/squid:Z" \
     -v "${PODMAN_SQUID_BASEDIR}/log:/var/log/squid:Z" \
     -v "${PODMAN_SQUID_BASEDIR}/lib:/var/lib:Z" \
+    --health-cmd="curl -s -o /dev/null http://localhost:3128 && \
+         curl -s -o /dev/null http://${baremetal_IPADDR}:3128 && \
+         curl -s -o /dev/null http://${ext0_IPADDR}:3128" \
+    --health-interval=10s \
+    --health-retries=3 \
+    --health-on-failure=kill \
     ${PODMAN_SQUID_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore squid-proxy
 ExecStopPost=/usr/bin/podman rm -f --ignore squid-proxy

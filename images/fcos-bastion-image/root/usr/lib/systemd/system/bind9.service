@@ -7,6 +7,7 @@ AssertPathExists=/opt/bind9
 AssertPathExists=/opt/bind9_zones
 AssertPathExists=/opt/bind9/named.conf.local
 AssertPathExists=/opt/bind9/named.conf.deployment_options
+ConditionPathExists=|/run/net_env
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
@@ -21,6 +22,12 @@ ExecStart=/usr/bin/podman run \
             -v /opt/bind9/named.conf.local:/etc/bind/named.conf.local:Z \
             -v /opt/bind9/rndc.key:/etc/rndc.key:Z \
             -v /opt/bind9/named.conf.deployment_options:/etc/bind/named.conf.deployment_options:Z \
+            --health-cmd='[ "$(dig +short @localhost redhat.com | wc -l)" -gt 0 ] && \
+                [ "$(dig +short @${ext0_IPADDR} redhat.com | wc -l)" -gt 0 ] && \
+                [ "$(dig +short @${baremetal_IPADDR} redhat.com | wc -l)" -gt 0 ]' \
+            --health-interval=10s \
+            --health-retries=3 \
+            --health-on-failure=kill \
             registry.ci.openshift.org/ci/bmqe-bind9:latest
 ExecStop=/usr/bin/podman stop --ignore bind9
 ExecStopPost=/usr/bin/podman rm -f --ignore bind9
