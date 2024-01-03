@@ -22,11 +22,9 @@ ExecStart=/usr/bin/podman run \
             -v /opt/bind9/named.conf.local:/etc/bind/named.conf.local:Z \
             -v /opt/bind9/rndc.key:/etc/rndc.key:Z \
             -v /opt/bind9/named.conf.deployment_options:/etc/bind/named.conf.deployment_options:Z \
-            --health-cmd='[ "$(dig +short @localhost redhat.com | wc -l)" -gt 0 ] && \
-                [ "$(dig +short @${ext0_IPADDR} redhat.com | wc -l)" -gt 0 ] && \
-                [ "$(dig +short @${baremetal_IPADDR} redhat.com | wc -l)" -gt 0 ]' \
-            --health-interval=10s \
-            --health-retries=3 \
+            --health-cmd="bash -c '[ $(dig +short @localhost redhat.com | wc -l) -gt 0 ]'" \
+            --health-interval=30s \
+            --health-retries=4 \
             --health-on-failure=kill \
             registry.ci.openshift.org/ci/bmqe-bind9:latest
 ExecStop=/usr/bin/podman stop --ignore bind9

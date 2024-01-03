@@ -19,9 +19,9 @@ ExecStart=/usr/bin/podman run --name registry-${PORT} \
             -v /opt/registry-${PORT}/auth:/auth:Z \
             -v /opt/registry-${PORT}/certs:/certs:Z \
             -v /opt/registry-${PORT}/config.yaml:/etc/docker/registry/config.yml:Z \
-            --health-cmd="curl -f -s https://${ext0_IPADDR}:${PORT}/ && \
-             curl -f -s https://${mgmt0_IPADDR}:${PORT}/ && \
-             curl -f -s https://${baremetal_IPADDR}:${PORT}/" \
+            --health-cmd="wget -q -O /dev/null --no-check-certificate https://localhost:${PORT}/ && \
+                          wget -q -O /dev/null --no-check-certificate https://${ext0_IPADDR}:${PORT}/ && \
+                          wget -q -O /dev/null --no-check-certificate https://${baremetal_IPADDR}:${PORT}/" \
             --health-interval=10s \
             --health-retries=3 \
             --health-on-failure=kill \
