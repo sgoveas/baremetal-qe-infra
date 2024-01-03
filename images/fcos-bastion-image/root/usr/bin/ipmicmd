@@ -10,7 +10,7 @@ shift
 
 host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.host == "'"${host_id}"'")')
 
-if [ "${host_obj}" == "null" ]; then
+if [ -z "${host_obj}" ]; then
     echo "Host ${host_id} not found"
     exit 1
 fi
