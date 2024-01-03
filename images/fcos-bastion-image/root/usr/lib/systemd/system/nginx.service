@@ -3,7 +3,6 @@ Description=Creates a nginx container service
 Wants=network-online.target
 After=network-online.target
 RequiresMountsFor=%t/containers
-ConditionPathExists=|/run/net_env
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n

@@ -6,7 +6,6 @@ RequiresMountsFor=%t/containers
 
 Wants=squid-proxy-init.service
 After=squid-proxy-init.service
-ConditionPathExists=|/run/net_env
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
