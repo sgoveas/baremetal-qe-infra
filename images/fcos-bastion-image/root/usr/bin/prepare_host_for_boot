@@ -1,0 +1,90 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [ "${#}" -lt 1 ]; then
+    echo "Usage: ${0} <host_id> [bootmode:pxe(default)|iso] [no_power_on]"
+    exit 1
+fi
+
+HOST="${1}"
+BOOT_MODE="${2:-pxe}"
+NO_POWER_ON="${3:-}"
+
+function log() {
+    echo "[#${HOST}] $(date -u +"%Y-%m-%dT%H:%M:%SZ"): ${*}"
+}
+
+host_obj=$(sed '1s/^#//; 2,${/^#/d; /^$/d}' "/etc/hosts_pool_inventory" | yq -p csv '.[] | select(.host == "'"${HOST}"'")')
+if [ -z "${host_obj}" ]; then
+    log "Host not found"
+    exit 1
+fi
+
+user=$(echo "${host_obj}" | yq -r '.bmc_user')
+password=$(echo "${host_obj}" | yq -r '.bmc_pass')
+address=$(echo "${host_obj}" | yq -r '.bmc_address')
+redfish_user="$(echo "${host_obj}" | yq -r '.redfish_user')"
+redfish_password="$(echo "${host_obj}" | yq -r '.redfish_password')"
+vendor=$(echo "${host_obj}" | yq -r '.vendor')
+ipxe_via_vmedia="$(echo "${host_obj}" | yq -r '.ipxe_via_vmedia')"
+
+function ipmi_cmd() {
+    ipmitool -I lanplus -H "${address}" -U "${user}" -P "${password}" "${@}" \
+        1> >(sed "s/^/$(log)/") 2>&1
+}
+
+log "Powering off the host..."
+until ipmi_cmd power status | grep -i -q "Chassis Power is off"; do
+  log "Host is powered on: forcing power off..."
+  ipmi_cmd power off || true
+  sleep 30
+done
+
+if [ "${ipxe_via_vmedia}" == "true" ]; then
+  log "The host requires an ipxe image to boot via vmedia in order to perform the pxe boot..."
+  mount.vmedia.ipxe "${HOST}"
+fi
+
+log "Setting the one-time boot parameter..."
+power_on_cmd="on"
+case "${vendor}" in
+  ampere)
+    boot_selection=$([ "${BOOT_MODE}" == "pxe" ] && echo force_pxe || echo force_cdrom)
+    ipmi_cmd chassis bootdev "$boot_selection"
+  ;;
+  dell)
+    boot_selection=$([ "${BOOT_MODE}" == "pxe" ] && [ "${ipxe_via_vmedia}" != "true" ] && echo PXE || echo VCD-DVD)
+    curl -k -u "${redfish_user}:${redfish_password}" -X POST \
+      "https://$address/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration" \
+       -H "Content-Type: application/json" -d \
+       '{"ShareParameters":{"Target":"ALL"},"ImportBuffer":
+          "<SystemConfiguration><Component FQDD=\"iDRAC.Embedded.1\">
+          <Attribute Name=\"ServerBoot.1#BootOnce\">Enabled</Attribute>
+          <Attribute Name=\"ServerBoot.1#FirstBootDevice\">'"$boot_selection"'</Attribute>
+          </Component></SystemConfiguration>"}'
+  ;;
+  hpe)
+    boot_selection=$([ "${BOOT_MODE}" == "pxe" ] && [ "${ipxe_via_vmedia}" != "true" ] && echo Pxe || echo Cd)
+    power_on_cmd="cycle"
+    curl -k -u "${redfish_user}:${redfish_password}" -X PATCH \
+      "https://$address/redfish/v1/Systems/1/" \
+      -H 'Content-Type: application/json' \
+      -d '{"Boot": {"BootSourceOverrideTarget": "'"$boot_selection"'"}}'
+  ;;
+  *)
+    log "Unknown vendor ${vendor}"
+    return 1
+esac
+
+if [ "${NO_POWER_ON}" == "no_power_on" ]; then
+  log "Skipping power on..."
+  exit 0
+fi
+
+log "Power on the host..."
+until ipmi_cmd power status | grep -i -q "Chassis Power is on"; do
+  log "The host is still off... power on"
+  ipmi_cmd power "$power_on_cmd" || true
+  sleep 30
+done
