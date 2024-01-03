@@ -23,7 +23,7 @@ ExecStart=/usr/bin/podman run --name nginx -p 80:80/tcp -p 443:443/tcp \
     ${PODMAN_NGINX_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore nginx
 ExecStopPost=/usr/bin/podman rm -f --ignore nginx
-Restart=on-failure
+Restart=always
 RestartSec=5
 Type=simple
 

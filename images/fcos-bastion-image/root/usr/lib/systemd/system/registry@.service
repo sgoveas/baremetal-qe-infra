@@ -29,7 +29,7 @@ ExecStart=/usr/bin/podman run --name registry-${PORT} \
             quay.io/libpod/registry:2.8.2
 ExecStop=/usr/bin/podman stop --ignore registry-${PORT}
 ExecStopPost=/usr/bin/podman rm -f --ignore registry-${PORT}
-Restart=on-failure
+Restart=always
 RestartSec=30
 Type=simple
 

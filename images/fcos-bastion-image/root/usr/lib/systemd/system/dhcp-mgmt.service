@@ -17,7 +17,7 @@ ExecStart=/usr/bin/podman run --name dhcp-mgmt \
     ${PODMAN_DNSMASQ_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore dhcp-mgmt
 ExecStopPost=/usr/bin/podman rm -f --ignore dhcp-mgmt
-Restart=on-failure
+Restart=always
 RestartSec=10
 Type=simple
 

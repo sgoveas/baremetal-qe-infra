@@ -31,7 +31,7 @@ ExecStart=/usr/bin/podman run \
     ${PODMAN_SQUID_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore squid-proxy
 ExecStopPost=/usr/bin/podman rm -f --ignore squid-proxy
-Restart=on-failure
+Restart=always
 RestartSec=5
 Type=simple
 

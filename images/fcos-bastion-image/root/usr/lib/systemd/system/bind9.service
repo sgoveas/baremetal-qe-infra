@@ -29,7 +29,7 @@ ExecStart=/usr/bin/podman run \
             registry.ci.openshift.org/ci/bmqe-bind9:latest
 ExecStop=/usr/bin/podman stop --ignore bind9
 ExecStopPost=/usr/bin/podman rm -f --ignore bind9
-Restart=on-failure
+Restart=always
 RestartSec=5
 Type=simple
 

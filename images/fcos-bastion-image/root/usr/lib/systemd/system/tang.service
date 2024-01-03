@@ -23,7 +23,7 @@ ExecStart=/usr/bin/podman run -p 7500:7500 --name tang \
     registry.ci.openshift.org/ci/bmqe-tang:latest
 ExecStop=/usr/bin/podman stop --ignore tang
 ExecStopPost=/usr/bin/podman rm -f --ignore tang
-Restart=on-failure
+Restart=always
 RestartSec=5
 Type=simple
 
