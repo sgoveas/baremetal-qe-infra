@@ -7,9 +7,13 @@ while IFS= read -r -d '' cluster_folder
 do
   echo "<3>Deleting $cluster_folder"
   cluster=$(basename "$cluster_folder")
+  if [ -f "$cluster_folder/preserve" ]; then
+    echo "<3>$cluster is marked to ignore the automatic pruning, skipping..."
+    continue
+  fi
   echo "<3>$cluster is more than 3 days old, starting the pruning...."
   prune_nodes "$cluster"
-done < <(find /var/builds/ -maxdepth 1 -type d -mtime +3)
+done < <(find /var/builds/ -maxdepth 1 -type d -mtime +2 -print0)
 
 # Clean up left over ports in the ovs switches that can span across multiple clusters
 for port in $(ovs-vsctl show  | grep "No such device" | sed -e 's/^.*device //' -e 's/ (No such.*$//')
