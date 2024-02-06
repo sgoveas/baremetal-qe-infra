@@ -1,6 +1,9 @@
 # This Dockerfile builds the image used by baremetal qe installation tests
 FROM quay.io/centos/centos:stream9
 ENV HOME /output
+
+COPY root/ /
+
 RUN set -x; INSTALL_PKGS="bash bc bind-utils butane ca-certificates conntrack-tools coreos-installer diffutils \
         ethtool file findutils gawk git gzip hostname iperf3 ipmitool iproute iputils jq libvirt-client lsof make \
         mtr net-tools nmap-ncat nmstate openssh procps procps-ng python3 python3-pip python-devel rsync shadow-utils socat strace \
