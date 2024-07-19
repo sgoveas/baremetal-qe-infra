@@ -44,7 +44,7 @@ echo "Running the post-installation steps..."
 set +e
 set -x
 bash ./dhcp-pxe-conf/baremetal-lab-post-dhcp-pxe-conf-commands.sh
-for architecture in aarch64 amd64; do
+for architecture in arm64 amd64; do
   export architecture="${architecture}"
   [ -f "${CLUSTER_PROFILE_DIR}/provisioning-host-ssh-port-${architecture}" ] && \
   bash ../ipi/deprovision/baremetal-lab-ipi-deprovision-commands.sh
