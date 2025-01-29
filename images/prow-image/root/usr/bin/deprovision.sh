@@ -19,6 +19,7 @@ SHARED_DIR="/var/builds/$1"
 ARTIFACT_DIR="/var/builds/$1"
 SELF_MANAGED_NETWORK="true"
 DISCONNECTED="true"
+INTERNAL_NET_CIDR="192.168.80.0/22"
 PROVISIONING_NET_DEV="prov" # Remove this variable after https://github.com/openshift/release/pull/46960 is merged
 # End (exported) environment variables setup
 set +a
