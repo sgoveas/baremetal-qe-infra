@@ -45,3 +45,10 @@ do
   echo "<3>Deleting orphan port $bridge/$port"
   ovs-vsctl del-port "$bridge" "$port"
 done
+
+# Check for leftover dhcp entries
+for cluster in $(find /opt/dnsmasq/hosts/ -type f -exec basename {} \; | sort | uniq); do
+  [ ! -d /var/builds/"$cluster" ] && \
+  echo "<3>$cluster directory does not exist, cleaning up leftover dhcp entries" && \
+  prune_nodes "$cluster"
+done
