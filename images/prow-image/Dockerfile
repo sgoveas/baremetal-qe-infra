@@ -26,5 +26,5 @@ RUN wget -O /usr/local/bin/yq \
   chmod +x /usr/local/bin/yq && \
   pip3 install setuptools-rust && \
   pip3 install --upgrade pip && \
-  INSTALL_PYTHON3_PKGS="netaddr junos-eznc wheel redfish sushy-tools" && \
+  INSTALL_PYTHON3_PKGS="netaddr junos-eznc wheel redfish sushy-tools ncclient>=0.7.0" && \
   pip3 install --ignore-installed $INSTALL_PYTHON3_PKGS
