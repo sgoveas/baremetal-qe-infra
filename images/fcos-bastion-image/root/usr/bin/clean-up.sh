@@ -52,3 +52,28 @@ for cluster in $(find /opt/dnsmasq/hosts/ -type f -exec basename {} \; | sort | 
   echo "<3>$cluster directory does not exist, cleaning up leftover dhcp entries" && \
   prune_nodes "$cluster"
 done
+
+# Check for leftover dns entries
+grep -oP 'ci-op-[a-zA-Z0-9]{8}' /var/opt/bind9_zones/zone | sort -u | while read -r cluster; do
+  if [ ! -d /var/builds/"$cluster" ]; then
+    echo "<3>$cluster directory does not exist, cleaning up leftover dns entries" && \
+    prune_nodes "$cluster"
+  fi
+done
+
+# Check for leftover bootstrap vm and pools
+mapfile -t vmlist < <(virsh list --all | grep "shut off" | grep -oP "ci-op-.*bootstrap")
+if (( "${#vmlist[@]}" == 0 )); then
+  echo "<3>No 'shut off' bootstrap vm to clean"
+else
+  for vm in ${#vmlist[@]}; do
+    cluster=$(echo "${vm}"| cut -d'-' -f1-3)
+    if [ ! -d /var/builds/"${cluster}" ]; then
+      virsh destroy "${vm}"
+      virsh undefine "${vm}" --remove-all-storage --nvram --managed-save --snapshots-metadata --wipe-storage
+      virsh pool-destroy "${vm}"
+      virsh pool-undefine "${vm}"
+      rm -fr /var/lib/libvirt/openshift-images/"${vm}"
+    fi
+  done
+fi
